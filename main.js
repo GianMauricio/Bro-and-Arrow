@@ -12,7 +12,7 @@ function init() {
 		5096
 	);
 
-	camera.position.set(0, 1, 0);
+	camera.position.set(0, 7.5, 0);
 	camera.rotation.set(0, 0, 0);
 
 	renderer = new THREE.WebGLRenderer({antialias: true});
@@ -29,6 +29,7 @@ function init() {
 		});
 
 		var arrow = new THREE.Mesh(geometry, material);
+		arrow.position.setY(5);
 		arrow.acceleration = acceleration;
 		arrow.velocity = velocity;
 		arrow.hasCollided = false;
@@ -36,7 +37,7 @@ function init() {
 		// Debug
 		// var arrow_helper = new THREE.BoxHelper(arrow, 0xff0000);
 		// scene.add(arrow_helper);
-		
+
 		return arrow;
 	};
 
@@ -61,9 +62,9 @@ function init() {
 	};
 
 	// Initialize scene objects
-	var arrow = init_arrow(new THREE.Vector3(), new THREE.Vector3(2, 0, -10));
+	var arrow = init_arrow(new THREE.Vector3(0, -3, 0), new THREE.Vector3(4, 3, -20));
 	scene.add(arrow);
-	var dummy = init_dummy(new THREE.Vector3(5, 0, -30));
+	var dummy = init_dummy(new THREE.Vector3(5, 5, -30));
 	scene.add(dummy);
 
 	var isColliding = function(arrow, dummy) {
@@ -80,6 +81,12 @@ function init() {
 	var update = function() {
 		var zeroVector = new THREE.Vector3();
 		var deltaTime = clock.getDelta();
+
+		// Stop arrow when it hits the "ground"
+		if(arrow.position.getComponent(1) <= 0) {
+			arrow.acceleration.set(0, 0, 0);
+			arrow.velocity.set(0, 0, 0);
+		}
 
 		// Acceleration -> velocity
 
@@ -99,6 +106,7 @@ function init() {
 			scene.remove(arrow);
 
 			dummy.velocity = arrow.velocity.clone();
+			arrow.acceleration.set(0, 0, 0);
 			arrow.velocity.set(0, 0, 0);
 
 			arrow.hasCollided = true;
