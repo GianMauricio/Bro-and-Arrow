@@ -29,7 +29,7 @@ function init() {
 		});
 
 		var arrow = new THREE.Mesh(geometry, material);
-		arrow.position.setY(5);
+		arrow.position.set(0, 5, 0);
 		arrow.acceleration = acceleration;
 		arrow.velocity = velocity;
 		arrow.hasCollided = false;
@@ -50,6 +50,7 @@ function init() {
 
 		var dummy = new THREE.Mesh(geometry, material);
 		dummy.geometry.computeBoundingBox();
+		dummy.friction = 5;
 		dummy.velocity = new THREE.Vector3();
 		dummy.position.copy(position);
 		dummy.hasCollided = false;
@@ -89,11 +90,12 @@ function init() {
 		}
 
 		// Acceleration -> velocity
+		arrow.velocity.add(arrow.acceleration.clone().multiplyScalar(deltaTime));
+		dummy.velocity.multiplyScalar(1 - ((dummy.friction) * deltaTime));
 
 		// Velocity -> position
 		arrow.position.add(arrow.velocity.clone().multiplyScalar(deltaTime));
 		dummy.position.add(dummy.velocity.clone().multiplyScalar(deltaTime));
-
 
 		// Velocity -> rotation
 		if(!arrow.velocity.equals(zeroVector)) {
@@ -105,7 +107,7 @@ function init() {
 			dummy.attach(arrow);
 			scene.remove(arrow);
 
-			dummy.velocity = arrow.velocity.clone();
+			dummy.velocity.copy(arrow.velocity);
 			arrow.acceleration.set(0, 0, 0);
 			arrow.velocity.set(0, 0, 0);
 
