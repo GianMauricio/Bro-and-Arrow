@@ -203,12 +203,17 @@ function init() {
         this.letFly = true;
         this.ArrowMass = 1;
         this.ArrowForce = -5;
+        this.DummyMass;
+        this.Gravity;
     }
     
     var GUI = new dat.GUI();
-    GUI.add(GUIControls, "letFly", true, false);
-    GUI.add(GUIControls, "ArrowMass", 1, 100);
-    GUI.add(GUIControls, "ArrowForce", -100, -1);
+    var Folder1 = GUI.addFolder("Arrows");
+    var Folder2 = GUI.addFolder("Dummies");
+    var Folder3 = GUI.addFolder("GodForces");
+    Folder1.add(GUIControls, "letFly", true, false);
+    Folder1.add(GUIControls, "ArrowMass", 1, 100);
+    Folder1.add(GUIControls, "ArrowForce", -100, -1);
     
 	var gameLoop = function() {
 		requestAnimationFrame(gameLoop);
