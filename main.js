@@ -1,3 +1,5 @@
+//Start everything from here
+//48
 function init() {
 	var scene = new THREE.Scene();
 	scene.background = new THREE.Color(0xe0e0e0);
@@ -9,21 +11,26 @@ function init() {
 		5096
 	);
 
+    //Set camera position
 	camera.position.set(0, 7.5, 0);
 	camera.rotation.set(0, 0, 0);
 
+    //Use this renderer for everything
 	var renderer = new THREE.WebGLRenderer({antialias: true});
 	renderer.setSize(window.innerWidth, window.innerHeight);
 	document.body.appendChild(renderer.domElement);
 
 	var clock = new THREE.Clock(true);
-
 	var mouse = new THREE.Vector2();
 
-	// Arrow
+	// Arrow array to hold all arrows
 	var arrows = [];
+    
+    //Makes the arrows
 	var init_arrow = function(direction, force) {
+        //Stuff to make the arrow
 		var geometry = new THREE.BoxBufferGeometry(0.25, 0.25, 3);
+        
 		var material = new THREE.MeshBasicMaterial({
 			color: 0xa6ea15
 		});
@@ -31,8 +38,8 @@ function init() {
 		// Initialize arrow
 		var arrow = new THREE.Mesh(geometry, material);
 		arrow.position.set(0, 7, 0);
-		arrow.mass = 1;
-		arrow.force = new THREE.Vector3(0, -5, 0);
+		arrow.mass = GUIControls.ArrowMass;
+		arrow.force = new THREE.Vector3(0, GUIControls.ArrowForce, 0);
 		
 		// Assume force was applied for 1 second
 		arrow.velocity = direction.multiplyScalar(1 * force / arrow.mass);
@@ -50,8 +57,10 @@ function init() {
 		return arrow;
 	};
 
-	// Dummy
+	// Dummy array to hold dummies
 	var dummies = [];
+    
+    //Makes the dummies
 	var init_dummy = function(position) {
 		var geometry = new THREE.BoxBufferGeometry(3, 6, 0.5);
 		var material = new THREE.MeshBasicMaterial({
@@ -128,75 +137,87 @@ function init() {
 		var zeroVector = new THREE.Vector3();
 		var deltaTime = clock.getDelta();
 
-		// Update for the dummies
-		for(var i=0; i<dummies.length; i++) {
-			let dummy = dummies[i];
+        if(GUIControls.letFly){
+            // Update for the dummies
+            for(var i=0; i<dummies.length; i++) {
+                let dummy = dummies[i];
 
-			// Acceleration -> velocity
-			dummy.velocity.multiplyScalar(1 - (dummy.friction * deltaTime));
+                // Acceleration -> velocity
+                dummy.velocity.multiplyScalar(1 - (dummy.friction * deltaTime));
 
-			// Velocity -> position
-			dummy.position.add(dummy.velocity.clone().multiplyScalar(deltaTime));
-		}
+                // Velocity -> position
+                dummy.position.add(dummy.velocity.clone().multiplyScalar(deltaTime));
+            }
 
-		// Update for the arrows
-		for(var i=0; i<arrows.length; i++) {
-			let arrow = arrows[i];
+            // Update for the arrows
+            for(var i=0; i<arrows.length; i++) {
+                let arrow = arrows[i];
 
-			// Stop arrow when it hits the "ground"
-			if(arrow.position.getComponent(1) <= 0) {
-				arrow.force.set(0, 0, 0);
-				arrow.velocity.set(0, 0, 0);
-			}
+                // Stop arrow when it hits the "ground"
+                if(arrow.position.getComponent(1) <= 0) {
+                    arrow.force.set(0, 0, 0);
+                    arrow.velocity.set(0, 0, 0);
+                }
 
-			// Acceleration -> velocity
-			var arrow_accel = arrow.force.clone().divideScalar(arrow.mass);
-			arrow.velocity.add(arrow_accel.multiplyScalar(deltaTime));
+                // Acceleration -> velocity
+                var arrow_accel = arrow.force.clone().divideScalar(arrow.mass);
+                arrow.velocity.add(arrow_accel.multiplyScalar(deltaTime));
 
-			// Velocity -> position
-			arrow.position.add(arrow.velocity.clone().multiplyScalar(deltaTime));
+                // Velocity -> position
+                arrow.position.add(arrow.velocity.clone().multiplyScalar(deltaTime));
 
-			// Velocity -> rotation
-			if(!arrow.velocity.equals(zeroVector)) {
-				arrow.lookAt(arrow.position.clone().add(arrow.velocity));
-			}
+                // Velocity -> rotation
+                if(!arrow.velocity.equals(zeroVector)) {
+                    arrow.lookAt(arrow.position.clone().add(arrow.velocity));
+                }
 
-			// Check if colliding with any of the dummies
-			for(var j=0; j<dummies.length; j++) {
-				let dummy = dummies[j];
+                // Check if colliding with any of the dummies
+                for(var j=0; j<dummies.length; j++) {
+                    let dummy = dummies[j];
 
-				// If colliding with a dummy
-				if(!arrow.hasCollided && isColliding(arrow, dummy)) {
-					// Remove from arrows list
-					arrows.splice(arrows.indexOf(arrow), 1);
-		
-					// Attach to dummy
-					dummy.attach(arrow);
-					scene.remove(arrow);
-		
-					// Transfer arrow physics stats to dummy
-					dummy.velocity.setZ(arrow.velocity.getComponent(2));
-					arrow.force.set(0, 0, 0);
-					arrow.velocity.set(0, 0, 0);
-		
-					// Set to to has collided
-					arrow.hasCollided = true;
-					dummy.hasCollided = true;
-				}
-			}
-		}
+                    // If colliding with a dummy
+                    if(!arrow.hasCollided && isColliding(arrow, dummy)) {
+                        // Remove from arrows list
+                        arrows.splice(arrows.indexOf(arrow), 1);
 
-		console.log(arrows.length);
-	}
+                        // Attach to dummy
+                        dummy.attach(arrow);
+                        scene.remove(arrow);
+
+                        // Transfer arrow physics stats to dummy
+                        dummy.velocity.setZ(arrow.velocity.getComponent(2));
+                        arrow.force.set(0, 0, 0);
+                        arrow.velocity.set(0, 0, 0);
+
+                        // Set to to has collided
+                        arrow.hasCollided = true;
+                        dummy.hasCollided = true;
+                    }
+                }
+            }
+		  console.log(arrows.length);
+	   }
+    }
 	
-	var render = function() {
-		renderer.render(scene, camera);
-	}
-	
+    var GUIControls = new function(){
+        this.letFly = true;
+        this.ArrowMass = 1;
+        this.ArrowForce = -5;
+    }
+    
+    var GUI = new dat.GUI();
+    GUI.add(GUIControls, "letFly", true, false);
+    GUI.add(GUIControls, "ArrowMass", 1, 100);
+    GUI.add(GUIControls, "ArrowForce", -100, -1);
+    
 	var gameLoop = function() {
 		requestAnimationFrame(gameLoop);
 		update();
 		render();
+	}
+
+    var render = function() {
+		renderer.render(scene, camera);
 	}
 
 	gameLoop();
