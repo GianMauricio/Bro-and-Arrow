@@ -22,19 +22,23 @@ function init() {
 
 	// Arrow
 	var arrows = [];
-	var init_arrow = function(velocity) {
+	var init_arrow = function(direction, force) {
 		var geometry = new THREE.BoxBufferGeometry(0.25, 0.25, 3);
 		var material = new THREE.MeshBasicMaterial({
 			color: 0xa6ea15
 		});
 
+		// Initialize arrow
 		var arrow = new THREE.Mesh(geometry, material);
 		arrow.position.set(0, 7, 0);
-		arrow.acceleration = new THREE.Vector3(0, -5, 0);
-		arrow.velocity = velocity;
+		arrow.mass = 1;
+		arrow.force = new THREE.Vector3(0, -5, 0);
+		
+		// Assume force was applied for 1 second
+		arrow.velocity = direction.multiplyScalar(1 * force / arrow.mass);
 		arrow.hasCollided = false;
 
-		// Debug
+		// Debug. Bounding box of arrow
 		// var arrow_helper = new THREE.BoxHelper(arrow, 0xff0000);
 		// scene.add(arrow_helper);
 
@@ -45,7 +49,7 @@ function init() {
 
 		return arrow;
 	};
-	
+
 	// Dummy
 	var dummies = [];
 	var init_dummy = function(position) {
@@ -56,6 +60,8 @@ function init() {
 		
 		var dummy = new THREE.Mesh(geometry, material);
 		dummy.geometry.computeBoundingBox();
+		dummy.mass = 1;
+		dummy.force = new THREE.Vector3();
 		dummy.friction = 5;
 		dummy.velocity = new THREE.Vector3();
 		dummy.position.copy(position);
@@ -72,6 +78,7 @@ function init() {
 	};
 	
 	// Shoot arrow
+	var timeLastClick;
 	var raycaster = new THREE.Raycaster();
 	var raycast = function(evt) {
 		// Center of screen is origin for raycasting
@@ -80,14 +87,26 @@ function init() {
 		
 		// Update raycaster
 		raycaster.setFromCamera(mouse, camera);
-		
+
+		// Save time now for arrow's force
+		timeLastClick = Date.now();
+	};
+	var shootArrow = function(evt) {
+		// Get time difference
+		let timeDiff = Date.now() - timeLastClick;
+
+		// 1000 is to convert into seconds
+		let force_coeff = 25;
+		let force = force_coeff * timeDiff / 1000;
+
 		// Get ray's direction
-		var ray_direction = raycaster.ray.direction.clone();
-		
+		let ray_direction = raycaster.ray.direction.clone();
+
 		// Spawn an arrow
-		init_arrow(ray_direction.multiplyScalar(15));
-	}
+		init_arrow(ray_direction, force);
+	};
 	renderer.domElement.addEventListener("mousedown", raycast, false);
+	renderer.domElement.addEventListener("mouseup", shootArrow, false);
 
 
 	// Initialize starting scene objects
@@ -115,7 +134,7 @@ function init() {
 
 			// Acceleration -> velocity
 			dummy.velocity.multiplyScalar(1 - (dummy.friction * deltaTime));
-	
+
 			// Velocity -> position
 			dummy.position.add(dummy.velocity.clone().multiplyScalar(deltaTime));
 		}
@@ -126,12 +145,13 @@ function init() {
 
 			// Stop arrow when it hits the "ground"
 			if(arrow.position.getComponent(1) <= 0) {
-				arrow.acceleration.set(0, 0, 0);
+				arrow.force.set(0, 0, 0);
 				arrow.velocity.set(0, 0, 0);
 			}
 
 			// Acceleration -> velocity
-			arrow.velocity.add(arrow.acceleration.clone().multiplyScalar(deltaTime));
+			var arrow_accel = arrow.force.clone().divideScalar(arrow.mass);
+			arrow.velocity.add(arrow_accel.multiplyScalar(deltaTime));
 
 			// Velocity -> position
 			arrow.position.add(arrow.velocity.clone().multiplyScalar(deltaTime));
@@ -156,7 +176,7 @@ function init() {
 		
 					// Transfer arrow physics stats to dummy
 					dummy.velocity.setZ(arrow.velocity.getComponent(2));
-					arrow.acceleration.set(0, 0, 0);
+					arrow.force.set(0, 0, 0);
 					arrow.velocity.set(0, 0, 0);
 		
 					// Set to to has collided
