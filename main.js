@@ -203,8 +203,12 @@ function init() {
         this.letFly = true;
         this.ArrowMass = 1;
         this.ArrowForce = -5;
-        this.DummyMass;
-        this.Gravity;
+        
+        this.letMove = true;
+        this.DummyMass = 1;
+        
+        this.Gravity = 9.8;
+        this.Friction = 0.05;
     }
     
     var GUI = new dat.GUI();
@@ -214,6 +218,12 @@ function init() {
     Folder1.add(GUIControls, "letFly", true, false);
     Folder1.add(GUIControls, "ArrowMass", 1, 100);
     Folder1.add(GUIControls, "ArrowForce", -100, -1);
+    
+    Folder2.add(GUIControls, "letMove", true, false);
+    Folder2.add(GUIControls, "DummyMass", 1, 100);
+    
+    Folder3.add(GUIControls, "Gravity", -20, 20);
+    Folder3.add(GUIControls, "Friction", -1, 1);
     
 	var gameLoop = function() {
 		requestAnimationFrame(gameLoop);
