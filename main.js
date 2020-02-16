@@ -27,10 +27,9 @@ function init() {
 	var arrows = [];
     
     //Makes the arrows
-	var init_arrow = function(direction, force) {
+	var init_arrow = function(direction, Sforce) {
         //Stuff to make the arrow
 		var geometry = new THREE.BoxBufferGeometry(0.25, 0.25, 3);
-        
 		var material = new THREE.MeshBasicMaterial({
 			color: 0xa6ea15
 		});
@@ -40,9 +39,10 @@ function init() {
 		arrow.position.set(0, 7, 0);
 		arrow.mass = GUIControls.ArrowMass;
 		arrow.force = new THREE.Vector3(0, -5, 0);
+        arrow.onGround = false;
 		
 		// Assume force was applied for 1 second
-		arrow.velocity = direction.multiplyScalar(GUIControls.ArrowForce * force / arrow.mass);
+		arrow.velocity = direction.multiplyScalar(GUIControls.ArrowForce * Sforce / arrow.mass);
 		arrow.hasCollided = false;
 
 		// Debug. Bounding box of arrow
@@ -137,7 +137,7 @@ function init() {
 		var zeroVector = new THREE.Vector3();
 		var deltaTime = clock.getDelta();
 
-        if(GUIControls.letFly){
+        if(GUIControls.letMove){
             // Update for the dummies
             for(var i=0; i<dummies.length; i++) {
                 let dummy = dummies[i];
@@ -148,27 +148,35 @@ function init() {
                 // Velocity -> position
                 dummy.position.add(dummy.velocity.clone().multiplyScalar(deltaTime));
             }
-
+        }
+        
+        if(GUIControls.letFly){
             // Update for the arrows
             for(var i=0; i<arrows.length; i++) {
                 let arrow = arrows[i];
-
+                //Force -> Acceleration
+                var arrow_accel = arrow.force.clone().divideScalar(arrow.mass);
+                
+                //Gravity -> Acceleration
+                var grav_arrow_accel = new THREE.Vector3(0, GUIControls.Gravity / arrow.mass, 0);
+                
+                // Acceleration -> velocity
+                arrow.velocity.add(arrow_accel.multiplyScalar(deltaTime));
+                arrow.velocity.add(grav_arrow_accel.multiplyScalar(deltaTime));
+                
+                if(!arrow.onGround){
+                    // Velocity -> position
+                    arrow.position.add(arrow.velocity.clone().multiplyScalar(deltaTime));
+                    
+                    // Velocity -> rotation
+                    if(!arrow.velocity.equals(zeroVector)) {
+                        arrow.lookAt(arrow.position.clone().add(arrow.velocity));
+                    }
+                }
+                
                 // Stop arrow when it hits the "ground"
                 if(arrow.position.getComponent(1) <= 0) {
-                    arrow.force.set(0, 0, 0);
-                    arrow.velocity.set(0, 0, 0);
-                }
-
-                // Acceleration -> velocity
-                var arrow_accel = arrow.force.clone().divideScalar(arrow.mass);
-                arrow.velocity.add(arrow_accel.multiplyScalar(deltaTime));
-
-                // Velocity -> position
-                arrow.position.add(arrow.velocity.clone().multiplyScalar(deltaTime));
-
-                // Velocity -> rotation
-                if(!arrow.velocity.equals(zeroVector)) {
-                    arrow.lookAt(arrow.position.clone().add(arrow.velocity));
+                   arrow.onGround = true;
                 }
 
                 // Check if colliding with any of the dummies
@@ -195,6 +203,7 @@ function init() {
                     }
                 }
             }
+            
 		  console.log(arrows.length);
 	   }
     }
@@ -207,8 +216,9 @@ function init() {
         this.letMove = true;
         this.DummyMass = 1;
         
-        this.Gravity = 9.8;
-        this.Friction = 0.05;
+        this.Gravity = -9.8;
+        this.Friction = 5;
+        this.AirResistance = 5;
     }
     
     var GUI = new dat.GUI();
@@ -217,13 +227,14 @@ function init() {
     var Folder3 = GUI.addFolder("GodForces");
     Folder1.add(GUIControls, "letFly", true, false);
     Folder1.add(GUIControls, "ArrowMass", 1, 100);
-    Folder1.add(GUIControls, "ArrowForce", 1, 100);
+    Folder1.add(GUIControls, "ArrowForce", 1, 10);
     
     Folder2.add(GUIControls, "letMove", true, false);
     Folder2.add(GUIControls, "DummyMass", 1, 100);
     
     Folder3.add(GUIControls, "Gravity", -20, 20);
-    Folder3.add(GUIControls, "Friction", -1, 1);
+    Folder3.add(GUIControls, "Friction", -10, 10);
+    Folder3.add(GUIControls, "AirResistance", -10, 10);
     
 	var gameLoop = function() {
 		requestAnimationFrame(gameLoop);
