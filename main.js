@@ -39,10 +39,10 @@ function init() {
 		var arrow = new THREE.Mesh(geometry, material);
 		arrow.position.set(0, 7, 0);
 		arrow.mass = GUIControls.ArrowMass;
-		arrow.force = new THREE.Vector3(0, GUIControls.ArrowForce, 0);
+		arrow.force = new THREE.Vector3(0, -5, 0);
 		
 		// Assume force was applied for 1 second
-		arrow.velocity = direction.multiplyScalar(1 * force / arrow.mass);
+		arrow.velocity = direction.multiplyScalar(GUIControls.ArrowForce * force / arrow.mass);
 		arrow.hasCollided = false;
 
 		// Debug. Bounding box of arrow
@@ -102,10 +102,10 @@ function init() {
 	};
 	var shootArrow = function(evt) {
 		// Get time difference
-		let timeDiff = Date.now() - timeLastClick;
+		let timeDiff = Date.now() - timeLastClick; /*TF is the let command???? oh it's like typedef*/
 
 		// 1000 is to convert into seconds
-		let force_coeff = 25;
+		let force_coeff = 25; 
 		let force = force_coeff * timeDiff / 1000;
 
 		// Get ray's direction
@@ -202,7 +202,7 @@ function init() {
     var GUIControls = new function(){
         this.letFly = true;
         this.ArrowMass = 1;
-        this.ArrowForce = -5;
+        this.ArrowForce = 1;
         
         this.letMove = true;
         this.DummyMass = 1;
@@ -217,7 +217,7 @@ function init() {
     var Folder3 = GUI.addFolder("GodForces");
     Folder1.add(GUIControls, "letFly", true, false);
     Folder1.add(GUIControls, "ArrowMass", 1, 100);
-    Folder1.add(GUIControls, "ArrowForce", -100, -1);
+    Folder1.add(GUIControls, "ArrowForce", 1, 100);
     
     Folder2.add(GUIControls, "letMove", true, false);
     Folder2.add(GUIControls, "DummyMass", 1, 100);
