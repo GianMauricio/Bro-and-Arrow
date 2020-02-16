@@ -22,6 +22,10 @@ function init() {
 
 	var clock = new THREE.Clock(true);
 	var mouse = new THREE.Vector2();
+    
+    var hit = 0;
+    var miss = 0;
+    var accuracy = 0.0;
 
 	// Arrow array to hold all arrows
 	var arrows = [];
@@ -61,11 +65,22 @@ function init() {
 	var dummies = [];
     
     //Makes the dummies
-	var init_dummy = function(position) {
-		var geometry = new THREE.BoxBufferGeometry(3, 6, 0.5);
-		var material = new THREE.MeshBasicMaterial({
-			color: 0x686868
-		});
+	var init_dummy = function(position, type) {
+        
+        if(type == "Dummy"){
+          var geometry = new THREE.BoxBufferGeometry(3, 6, 0.5);
+		  var material = new THREE.MeshBasicMaterial({
+			 color: 0x686868
+		  });
+        }
+        
+        if(type == "Target"){
+          var geometry = new THREE.BoxBufferGeometry(2, 2, 2);
+		  var material = new THREE.MeshBasicMaterial({
+			 color: 0x349934
+		  });
+        }
+		
 		
 		var dummy = new THREE.Mesh(geometry, material);
 		dummy.geometry.computeBoundingBox();
@@ -119,8 +134,13 @@ function init() {
 
 
 	// Initialize starting scene objects
-	init_dummy(new THREE.Vector3(5, 5, -30));
-
+	init_dummy(new THREE.Vector3(5, 5, -30), "Dummy");
+    init_dummy(new THREE.Vector3(0, 5, -20), "Dummy");
+    init_dummy(new THREE.Vector3(-5, 5, -10), "Dummy");
+    
+    init_dummy(new THREE.Vector3(5, 9, -30), "Target");
+    init_dummy(new THREE.Vector3(0, 9, -20), "Target");
+    init_dummy(new THREE.Vector3(-5, 9, -10), "Target");
 
 	var isColliding = function(arrow, dummy) {
 		// Tip of the arrow
@@ -143,7 +163,7 @@ function init() {
                 let dummy = dummies[i];
 
                 // Acceleration -> velocity
-                dummy.velocity.multiplyScalar(1 - (dummy.friction * deltaTime));
+                dummy.velocity.multiplyScalar(1 - (GUIControls.Friction * deltaTime));
 
                 // Velocity -> position
                 dummy.position.add(dummy.velocity.clone().multiplyScalar(deltaTime));
@@ -218,7 +238,8 @@ function init() {
         
         this.Gravity = -9.8;
         this.Friction = 5;
-        this.AirResistance = 5;
+        
+        this.AppleMode = false;
     }
     
     var GUI = new dat.GUI();
@@ -234,7 +255,6 @@ function init() {
     
     Folder3.add(GUIControls, "Gravity", -20, 20);
     Folder3.add(GUIControls, "Friction", -10, 10);
-    Folder3.add(GUIControls, "AirResistance", -10, 10);
     
 	var gameLoop = function() {
 		requestAnimationFrame(gameLoop);
