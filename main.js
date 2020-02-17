@@ -14,6 +14,10 @@ function init() {
     //Set camera position
 	camera.position.set(0, 7.5, 0);
 	camera.rotation.set(0, 0, 0);
+    
+    var Miss = 0;
+    var Hit = 0;
+    var Accuracy = 0.0;
 
     //Use this renderer for everything
 	var renderer = new THREE.WebGLRenderer({antialias: true});
@@ -86,6 +90,7 @@ function init() {
 		dummy.velocity = new THREE.Vector3();
 		dummy.position.copy(position);
 		dummy.hasCollided = false;
+        dummy.Type = type;
 
 		// Debug
 		var dummy_helper = new THREE.BoxHelper(dummy, 0xff0000);
@@ -96,6 +101,17 @@ function init() {
 
 		return dummy;
 	};
+    
+    var showStats = new function(evt){
+        console.log("Hits: ");
+        console.log(Hit);
+
+        console.log("Miss: ");
+        console.log(Miss);
+
+        console.log("Overall Accuracy: ");
+        console.log((Hit/Miss) * 100);
+    }
 	
 	// Shoot arrow
 	var timeLastClick;
@@ -127,6 +143,7 @@ function init() {
 	};
 	renderer.domElement.addEventListener("mousedown", raycast, false);
 	renderer.domElement.addEventListener("mouseup", shootArrow, false);
+    renderer.domElement.addEventListener("keydown", showStats, false);
 
 
 	// Initialize starting scene objects
@@ -192,7 +209,8 @@ function init() {
                 
                 // Stop arrow when it hits the "ground"
                 if(arrow.position.getComponent(1) <= 0) {
-                   arrow.onGround = true;
+                    arrow.onGround = true;
+                    Miss = Miss + 1;
                 }
 
                 // Check if colliding with any of the dummies
@@ -216,10 +234,17 @@ function init() {
                         // Set to to has collided
                         arrow.hasCollided = true;
                         dummy.hasCollided = true;
+                        Hit = Hit + 1;
+                        
+                        if(GUIControls.AppleMode){
+                            if(dummy.Type == "Target"){
+                                
+                            }
+                        }
                     }
                 }
             }
-            console.log(arrows.length);
+            //console.log(arrows.length);
 	   }
     }
 	
@@ -235,9 +260,6 @@ function init() {
         this.Friction = 5;
         
         this.AppleMode = false;
-        this.Hit = 0;
-        this.Miss = 0;
-        this.Accuracy = 0.0;
     }
     
     var GUI = new dat.GUI();
@@ -256,9 +278,6 @@ function init() {
     Folder3.add(GUIControls, "Friction", -10, 10);
     
     Folder4.add(GUIControls, "AppleMode", true, false);
-    Folder4.add(GUIControls, "Hit", 0, 256);
-    Folder4.add(GUIControls, "Miss", 0, 256);
-    Folder4.add(GUIControls, "Accuracy", 0.0, 100.0);
     
 	var gameLoop = function() {
 		requestAnimationFrame(gameLoop);
