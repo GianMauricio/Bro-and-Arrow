@@ -22,10 +22,6 @@ function init() {
 
 	var clock = new THREE.Clock(true);
 	var mouse = new THREE.Vector2();
-    
-    var hit = 0;
-    var miss = 0;
-    var accuracy = 0.0;
 
 	// Arrow array to hold all arrows
 	var arrows = [];
@@ -223,8 +219,7 @@ function init() {
                     }
                 }
             }
-            
-		  console.log(arrows.length);
+            console.log(arrows.length);
 	   }
     }
 	
@@ -240,12 +235,16 @@ function init() {
         this.Friction = 5;
         
         this.AppleMode = false;
+        this.Hit = 0;
+        this.Miss = 0;
+        this.Accuracy = 0.0;
     }
     
     var GUI = new dat.GUI();
     var Folder1 = GUI.addFolder("Arrows");
     var Folder2 = GUI.addFolder("Dummies");
     var Folder3 = GUI.addFolder("GodForces");
+    var Folder4 = GUI.addFolder("Statistics");
     Folder1.add(GUIControls, "letFly", true, false);
     Folder1.add(GUIControls, "ArrowMass", 1, 100);
     Folder1.add(GUIControls, "ArrowForce", 1, 10);
@@ -255,6 +254,11 @@ function init() {
     
     Folder3.add(GUIControls, "Gravity", -20, 20);
     Folder3.add(GUIControls, "Friction", -10, 10);
+    
+    Folder4.add(GUIControls, "AppleMode", true, false);
+    Folder4.add(GUIControls, "Hit", 0, 256);
+    Folder4.add(GUIControls, "Miss", 0, 256);
+    Folder4.add(GUIControls, "Accuracy", 0.0, 100.0);
     
 	var gameLoop = function() {
 		requestAnimationFrame(gameLoop);
