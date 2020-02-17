@@ -2,7 +2,7 @@
 //48
 function init() {
 	var scene = new THREE.Scene();
-	scene.background = new THREE.Color(0xe0e0e0);
+	scene.background = new THREE.Color(0x646490);
 
 	var camera = new THREE.PerspectiveCamera(
 		75,
@@ -18,6 +18,11 @@ function init() {
     var Miss = 0;
     var Hit = 0;
     var Accuracy = 0.0;
+    var Score = 10;
+    var TargetWorth = 20;
+    var DummyWorth = 10;
+    var aTargetWorth = 50;
+    var aDummyWorth = -20;
 
     //Use this renderer for everything
 	var renderer = new THREE.WebGLRenderer({antialias: true});
@@ -48,6 +53,7 @@ function init() {
 		// Assume force was applied for 1 second
 		arrow.velocity = direction.multiplyScalar(GUIControls.ArrowForce * Sforce / arrow.mass);
 		arrow.hasCollided = false;
+        arrow.logMiss = false;
 
 		// Debug. Bounding box of arrow
 		// var arrow_helper = new THREE.BoxHelper(arrow, 0xff0000);
@@ -56,7 +62,7 @@ function init() {
 		arrows.push(arrow);
 		scene.add(arrow);
 
-		console.log("Spawned an arrow!");
+		//console.log("Spawned an arrow!");
 
 		return arrow;
 	};
@@ -78,6 +84,13 @@ function init() {
           var geometry = new THREE.BoxBufferGeometry(2, 2, 2);
 		  var material = new THREE.MeshBasicMaterial({
 			 color: 0x349934
+		  });
+        }
+        
+        if(type == "Wall"){
+            var geometry = new THREE.BoxBufferGeometry(10, 5, 0.5);
+		  var material = new THREE.MeshBasicMaterial({
+			 color: 0x343499
 		  });
         }
 		
@@ -102,16 +115,36 @@ function init() {
 		return dummy;
 	};
     
-    var showStats = new function(evt){
-        console.log("Hits: ");
-        console.log(Hit);
+    var showStats = function(evt) {
+        if(evt.keyCode == 32){
+            console.log("Hits: ");
+            console.log(Hit);
 
-        console.log("Miss: ");
-        console.log(Miss);
+            console.log("Miss: ");
+            console.log(Miss);
 
-        console.log("Overall Accuracy: ");
-        console.log((Hit/Miss) * 100);
-    }
+            console.log("Overall Accuracy: ");
+            console.log((Hit/(Hit+Miss)) * 100);
+
+            console.log("Score: ");
+            console.log(Score);
+        }
+        
+        else if(evt.keyCode == 81){
+            if(GUIControls.AppleMode){
+                console.log("Shoot grey boxes for", aDummyWorth);
+                console.log("Shoot green boxes for", aTargetWorth);
+                //console.log("Avoid shooting blue walls, they are worth nothing");
+            }
+            
+            else{
+                console.log("Shoot grey boxes for", DummyWorth);
+                console.log("Shoot green boxes for", TargetWorth);
+                //console.log("Avoid shooting blue walls, they are worth nothing");
+            }
+        }
+        
+    };
 	
 	// Shoot arrow
 	var timeLastClick;
@@ -143,7 +176,7 @@ function init() {
 	};
 	renderer.domElement.addEventListener("mousedown", raycast, false);
 	renderer.domElement.addEventListener("mouseup", shootArrow, false);
-    renderer.domElement.addEventListener("keydown", showStats, false);
+    document.addEventListener("keydown", showStats, false);
 
 
 	// Initialize starting scene objects
@@ -154,6 +187,8 @@ function init() {
     init_dummy(new THREE.Vector3(5, 9, -30), "Target");
     init_dummy(new THREE.Vector3(0, 9, -20), "Target");
     init_dummy(new THREE.Vector3(-5, 9, -10), "Target");
+    
+    init_dummy(new THREE.Vector3(5, 9, -25), "Wall");
 
 	var isColliding = function(arrow, dummy) {
 		// Tip of the arrow
@@ -177,6 +212,18 @@ function init() {
 
                 // Acceleration -> velocity
                 dummy.velocity.multiplyScalar(1 - (GUIControls.Friction * deltaTime));
+                
+                //Move dummy
+                if(dummy.Type == "Wall"){
+                    if(dummy.velocity.x < 10){
+                        dummy.velocity.add(new THREE.Vector3(5, 0, 0));
+                    }
+                    
+                    else if(dummy.velocity.x > 10){
+                        dummy.velocity.add(new THREE.Vector3(-5, 0, 0));
+                    }
+                    
+                }
 
                 // Velocity -> position
                 dummy.position.add(dummy.velocity.clone().multiplyScalar(deltaTime));
@@ -188,7 +235,7 @@ function init() {
             for(var i=0; i<arrows.length; i++) {
                 let arrow = arrows[i];
                 //Force -> Acceleration
-                var arrow_accel = arrow.force.clone().divideScalar(arrow.mass);
+                var arrow_accel = arrow.force.clone().divideScalar(GUIControls.ArrowMass);
                 
                 //Gravity -> Acceleration
                 var grav_arrow_accel = new THREE.Vector3(0, GUIControls.Gravity / arrow.mass, 0);
@@ -210,7 +257,10 @@ function init() {
                 // Stop arrow when it hits the "ground"
                 if(arrow.position.getComponent(1) <= 0) {
                     arrow.onGround = true;
-                    Miss = Miss + 1;
+                    if(!arrow.logMiss){
+                        Miss = Miss + 1;
+                        arrow.logMiss = true;
+                    }
                 }
 
                 // Check if colliding with any of the dummies
@@ -238,7 +288,21 @@ function init() {
                         
                         if(GUIControls.AppleMode){
                             if(dummy.Type == "Target"){
-                                
+                                Score += aTargetWorth;
+                            }
+                            
+                            if(dummy.Type == "Dummy"){
+                                Score += aDummyWorth;
+                            }
+                        }
+                        
+                        else{
+                            if(dummy.Type == "Target"){
+                                Score += TargetWorth;
+                            }
+                            
+                            if(dummy.Type == "Dummy"){
+                                Score += DummyWorth;
                             }
                         }
                     }
@@ -266,7 +330,7 @@ function init() {
     var Folder1 = GUI.addFolder("Arrows");
     var Folder2 = GUI.addFolder("Dummies");
     var Folder3 = GUI.addFolder("GodForces");
-    var Folder4 = GUI.addFolder("Statistics");
+    var Folder4 = GUI.addFolder("GameMode");
     Folder1.add(GUIControls, "letFly", true, false);
     Folder1.add(GUIControls, "ArrowMass", 1, 100);
     Folder1.add(GUIControls, "ArrowForce", 1, 10);
